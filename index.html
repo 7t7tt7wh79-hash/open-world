@@ -1,14 +1,194 @@
-<!--
-To change this template, choose Tools | Templates
-and open the template in the editor.
--->
 <!DOCTYPE html>
-<html>
-    <head>
-        <title></title>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    </head>
-    <body>
-        <div>TODO write content</div>
-    </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>666 Fish - Coin System</title>
+    <style>
+        body { margin: 0; background-color: #0b1d3a; overflow: hidden; text-align: center; font-family: sans-serif; color: white; }
+        .hud-container { display: flex; justify-content: center; gap: 20px; font-size: 22px; font-weight: bold; margin: 15px 0; align-items: center; flex-wrap: wrap; }
+        .account-box { color: #ffffff; background: #224466; padding: 5px 15px; border-radius: 8px; border: 1px solid #00ffcc; font-size: 18px; }
+        .coin-box { color: #ffd700; background: #112a46; padding: 5px 15px; border-radius: 8px; border: 1px solid #ffd700; }
+        .score-box { color: #00ffcc; background: #112a46; padding: 5px 15px; border-radius: 8px; border: 1px solid #00ffcc; }
+        .topup-btn { background: #28a745; color: white; border: none; padding: 7px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 18px; }
+        .topup-btn:hover { background: #218838; }
+        canvas { background: radial-gradient(circle, #1a4f7a, #051329); display: block; margin: 0 auto; border: 4px solid #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); cursor: crosshair; }
+        .notice { font-size: 14px; color: #aaa; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>666 FISH GAME</h1>
+    
+    <!-- သတင်းအချက်အလက်ပြဘားနှင့် ယူနစ်ဖြည့်ခလုတ် -->
+    <div class="hud-container">
+        <div class="account-box">ID/အကောင့်နာမည်: <span id="accountName">63555114</span></div>
+        <div class="coin-box">လက်ကျန်ပွိုင့် (Coins): <span id="coinBalance">500000</span></div>
+        <div class="score-box">ယခုပွဲရမှတ် (Score): <span id="gameScore">0</span></div>
+        <button class="topup-btn" onclick="topUpCoins()">ယူနစ်ဖြည့်မည်</button>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    <p class="notice">* တစ်ချက်ပစ်လျှင် ၁၀ ပွိုင့် နှုတ်ပါသည်။ ငါးတစ်ကောင်မိလျှင် ပွိုင့် ၃၀ ရပါမည်။</p>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const coinCtx = document.getElementById("coinBalance");
+        const scoreCtx = document.getElementById("gameScore");
+
+        // အကောင့်အချက်အလက်နှင့် ငွေပမာဏ သတ်မှတ်ချက်
+        let userCoins = 500000; 
+        let gameScore = 0;
+        let fishArray = [];
+        let bulletArray = [];
+
+        const cannonX = canvas.width / 2;
+        const cannonY = canvas.height - 20;
+
+        // ယူနစ်ဖြည့်သည့်စနစ်
+        function topUpCoins() {
+            let amount = prompt("ဖြည့်သွင်းလိုသော ယူနစ်ပမာဏကို ရိုက်ထည့်ပါ:");
+            amount = parseInt(amount);
+            if (!isNaN(amount) && amount > 0) {
+                userCoins += amount;
+                coinCtx.innerText = userCoins;
+                alert(amount + " ယူနစ် အောင်မြင်စွာ ဖြည့်သွင်းပြီးပါပြီ။");
+            } else {
+                alert("မှန်ကန်သော ပမာဏကို ရိုက်ထည့်ပါ။");
+            }
+        }
+
+        class Fish {
+            constructor() {
+                this.x = -60;
+                this.y = Math.random() * (canvas.height - 150) + 50; 
+                this.size = Math.random() * 15 + 20; 
+                this.speed = Math.random() * 3 + 2;   
+            }
+            update() {
+                this.x += this.speed;
+            }
+            draw() {
+                ctx.fillStyle = "#ff5722";
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(this.x - this.size, this.y);
+                ctx.lineTo(this.x - this.size - 15, this.y - 12);
+                ctx.lineTo(this.x - this.size - 15, this.y + 12);
+                ctx.fill();
+            }
+        }
+
+        class Bullet {
+            constructor(startX, startY, targetX, targetY) {
+                this.x = startX;
+                this.y = startY;
+                this.speed = 10;
+                this.size = 6;
+                
+                let dx = targetX - startX;
+                let dy = targetY - startY;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                
+                this.vx = (dx / distance) * this.speed;
+                this.vy = (dy / distance) * this.speed;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+            draw() {
+                ctx.fillStyle = "#00ffcc";
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "#00ffcc";
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0; 
+            }
+        }
+
+        function drawCannon() {
+            ctx.fillStyle = "#ffd700";
+            ctx.beginPath();
+            ctx.arc(cannonX, cannonY, 25, Math.PI, 0);
+            ctx.fill();
+        }
+
+        function handleFish() {
+            if (Math.random() < 0.02) {
+                fishArray.push(new Fish());
+            }
+            for (let i = 0; i < fishArray.length; i++) {
+                fishArray[i].update();
+                fishArray[i].draw();
+
+                if (fishArray[i].x > canvas.width + 60) {
+                    fishArray.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function handleBullets() {
+            for (let b = 0; b < bulletArray.length; b++) {
+                bulletArray[b].update();
+                bulletArray[b].draw();
+
+                if (bulletArray[b].x < 0 || bulletArray[b].x > canvas.width || bulletArray[b].y < 0) {
+                    bulletArray.splice(b, 1);
+                    b--;
+                    continue;
+                }
+
+                for (let f = 0; f < fishArray.length; f++) {
+                    let distance = Math.sqrt((bulletArray[b].x - fishArray[f].x)**2 + (bulletArray[b].y - fishArray[f].y)**2);
+                    
+                    if (distance < fishArray[f].size + bulletArray[b].size) {
+                        userCoins += 30;
+                        gameScore += 10;
+                        
+                        coinCtx.innerText = userCoins;
+                        scoreCtx.innerText = gameScore;
+                        
+                        fishArray.splice(f, 1);
+                        bulletArray.splice(b, 1);
+                        b--;
+                        break; 
+                    }
+                }
+            }
+        }
+
+        canvas.addEventListener("mousedown", function(event) {
+            if (userCoins < 10) {
+                alert("လူကြီးမင်းတွင် ပွိုင့်မလုံလောက်တော့ပါ။ ကျေးဇူးပြု၍ ယူနစ်ပြန်ဖြည့်ပါ။");
+                return;
+            }
+
+            userCoins -= 10;
+            coinCtx.innerText = userCoins;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            bulletArray.push(new Bullet(cannonX, cannonY - 15, mouseX, mouseY));
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawCannon();
+            handleFish();
+            handleBullets();
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
 </html>
+
